@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>Sultan Trails UW LCY</title>
+
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+
+    <!--Add mapbox.js -->
+    <script src='https://api.tiles.mapbox.com/mapbox.js/v1.6.2/mapbox.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.2/mapbox.css' rel='stylesheet' />
+
+    <!--Add draw plugin -->
+    <link rel='stylesheet' href='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.2/leaflet.draw.css' />
+    <script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.2/leaflet.draw.js'></script>
+    <script src="https://unpkg.com/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
+
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        #delete, #save {
+            position: absolute;
+            top:50px;
+            right:10px;
+            z-index:100;
+            background:white;
+            color:black;
+            padding:6px;
+            border-radius:4px;
+            font-family: 'Helvetica Neue';
+            cursor: pointer;
+            font-size:12px;
+            text-decoration:none;
+        }
+        #save {
+            top:90px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id='map'></div>
+    <div id='delete'>Delete Trails</div>
+    <a href = "#" id='save'>Submit Trails</a>
+
+    <script>
+        var map = L.mapbox.map('map')
+            .setView([47.864161, -121.817149], 14);
+
+        // Add layers to the map
+        L.control.layers({
+            'Satellite Map': L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+                attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> <strong><a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></strong>',
+                tileSize: 512,
+                maxZoom: 18,
+                zoomOffset: -1,
+                detectRetina: true,
+                id: 'mapbox/satellite-streets-v11',
+                accessToken: 'pk.eyJ1IjoiamltZWFnYWgiLCJhIjoiY2l2aWw3YmJnMDIxdzJ5bXFuZDZ4bnU1YiJ9.lMwViZI1fDl75hf6XGm78g'
+                }).addTo(map),
+            'Terrain Map': L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+                attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> <strong><a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></strong>',
+                tileSize: 512,
+                maxZoom: 18,
+                zoomOffset: -1,
+                detectRetina: true,
+                id: 'mapbox/outdoors-v11',
+                accessToken: 'pk.eyJ1IjoiamltZWFnYWgiLCJhIjoiY2l2aWw3YmJnMDIxdzJ5bXFuZDZ4bnU1YiJ9.lMwViZI1fDl75hf6XGm78g'
+                })
+        }).addTo(map);
+
+        var featureGroup = L.featureGroup().addTo(map);
+
+        var drawControl = new L.Control.Draw({
+            draw:{
+                marker : false,
+                polygon : false,
+                rectangle: false,
+                circle: false,
+            },
+            edit: {
+                featureGroup: featureGroup
+            }
+        }).addTo(map);
+
+        map.on('draw:created', function(e) {
+
+            // Each time a feaute is created, it's added to the over arching feature group
+            featureGroup.addLayer(e.layer);
+        });
+
+
+        // on click, clear all layers
+        document.getElementById('delete').onclick = function(e) {
+            featureGroup.clearLayers();
+        }
+
+        document.getElementById('save').onclick = function(e) {
+            // Extract GeoJson from featureGroup
+            var data = featureGroup.toGeoJSON();
+    
+            
+            // Stringify the GeoJson
+            var convertedData = JSON.stringify(data);
+            var oData = data.features[0];
+            console.log(JSON.stringify(data));
+            
+            var thyme = new Date();
+            var sthyme = thyme.toString();
+            
+            var eData = data.features.map(function (el) {
+            return el.geometry
+            });
+            
+            console.log(JSON.stringify(oData));
+            console.log(data.features.length.toString());
+            
+            var mapboxClient = mapboxSdk({accessToken:'sk.eyJ1IjoiamltZWFnYWgiLCJhIjoiY2s5ajZzdTY5MDFuczNldG5lbXlheDB3NCJ9.ZT8IsmxmBR0fxJAi5V7Imw'});
+            
+            // turn geojson collection to iterable array 
+            var geoFeat = data.features;
+            var i = 0;
+            
+            for (i of geoFeat) {
+                var putData = i;
+                var numbId = Math.floor(Math.random() * 10);
+                
+                mapboxClient.datasets.putFeature({
+                  datasetId: 'ck9j63pne04ef2lp3cy2rwzzo',
+                  featureId: sthyme.concat("feature ", numbId.toString()),
+                  feature: putData
+                })
+                  .send()
+                  .then(response => {
+                    const feature = response.body;
+                  })
+                  .then(result => alert("Submission successful!"),
+                        error => alert("There seems to be a problem. Try again."))
+                ;
+            };
+            // Create export
+            //document.getElementById('save').setAttribute('href', 'data:' + convertedData);
+            //document.getElementById('save').setAttribute('download','data.geojson');
+        }
+    </script>
+
+</body>
+
+</html>
